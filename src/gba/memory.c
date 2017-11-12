@@ -742,6 +742,12 @@ void GBAStore32(struct ARMCore* cpu, uint32_t address, int32_t value, int* cycle
 	int32_t oldValue;
 	char* waitstatesRegion = memory->waitstatesNonseq32;
 
+#ifdef BUILD_JIT
+	if(cpu->jit.useJit) {
+		ARMJitInvalidateMemory(cpu, address, 4);
+	}
+#endif
+
 	switch (address >> BASE_OFFSET) {
 	case REGION_WORKING_RAM:
 		STORE_WORKING_RAM;
@@ -792,6 +798,12 @@ void GBAStore16(struct ARMCore* cpu, uint32_t address, int16_t value, int* cycle
 	struct GBAMemory* memory = &gba->memory;
 	int wait = 0;
 	int16_t oldValue;
+
+#ifdef BUILD_JIT
+	if(cpu->jit.useJit) {
+		ARMJitInvalidateMemory(cpu, address, 2);
+	}
+#endif
 
 	switch (address >> BASE_OFFSET) {
 	case REGION_WORKING_RAM:
@@ -872,6 +884,12 @@ void GBAStore8(struct ARMCore* cpu, uint32_t address, int8_t value, int* cycleCo
 	struct GBAMemory* memory = &gba->memory;
 	int wait = 0;
 	uint16_t oldValue;
+
+#ifdef BUILD_JIT
+	if(cpu->jit.useJit) {
+		ARMJitInvalidateMemory(cpu, address, 1);
+	}
+#endif
 
 	switch (address >> BASE_OFFSET) {
 	case REGION_WORKING_RAM:
@@ -1062,6 +1080,12 @@ void GBAPatch32(struct ARMCore* cpu, uint32_t address, int32_t value, int32_t* o
 	struct GBAMemory* memory = &gba->memory;
 	int32_t oldValue = -1;
 
+#ifdef BUILD_JIT
+	if(cpu->jit.useJit) {
+		ARMJitInvalidateMemory(cpu, address, 4);
+	}
+#endif
+
 	switch (address >> BASE_OFFSET) {
 	case REGION_WORKING_RAM:
 		LOAD_32(oldValue, address & (SIZE_WORKING_RAM - 4), memory->wram);
@@ -1132,6 +1156,12 @@ void GBAPatch16(struct ARMCore* cpu, uint32_t address, int16_t value, int16_t* o
 	struct GBAMemory* memory = &gba->memory;
 	int16_t oldValue = -1;
 
+#ifdef BUILD_JIT
+	if(cpu->jit.useJit) {
+		ARMJitInvalidateMemory(cpu, address, 2);
+	}
+#endif
+
 	switch (address >> BASE_OFFSET) {
 	case REGION_WORKING_RAM:
 		LOAD_16(oldValue, address & (SIZE_WORKING_RAM - 2), memory->wram);
@@ -1199,6 +1229,12 @@ void GBAPatch8(struct ARMCore* cpu, uint32_t address, int8_t value, int8_t* old)
 	struct GBA* gba = (struct GBA*) cpu->master;
 	struct GBAMemory* memory = &gba->memory;
 	int8_t oldValue = -1;
+
+#ifdef BUILD_JIT
+	if(cpu->jit.useJit) {
+		ARMJitInvalidateMemory(cpu, address, 1);
+	}
+#endif
 
 	switch (address >> BASE_OFFSET) {
 	case REGION_WORKING_RAM:
@@ -1416,6 +1452,10 @@ uint32_t GBAStoreMultiple(struct ARMCore* cpu, uint32_t address, int mask, enum 
 		address += offset;
 	}
 
+#ifdef BUILD_JIT
+	uint32_t old_address = address;
+#endif
+
 	uint32_t addressMisalign = address & 0x3;
 	int region = address >> BASE_OFFSET;
 	if (region < REGION_CART_SRAM) {
@@ -1465,6 +1505,12 @@ uint32_t GBAStoreMultiple(struct ARMCore* cpu, uint32_t address, int mask, enum 
 		}
 		*cycleCounter += wait;
 	}
+
+#ifdef BUILD_JIT
+	if(cpu->jit.useJit) {
+		ARMJitInvalidateMemory(cpu, old_address, address - old_address - 4);
+	}
+#endif
 
 	if (direction & LSM_B) {
 		address -= offset;
@@ -1517,6 +1563,10 @@ void GBAAdjustWaitstates(struct GBA* gba, uint16_t parameters) {
 
 	cpu->memory.activeNonseqCycles32 = memory->waitstatesNonseq32[memory->activeRegion];
 	cpu->memory.activeNonseqCycles16 = memory->waitstatesNonseq16[memory->activeRegion];
+
+#ifdef BUILD_JIT
+	ARMJitWaitStateChanged(cpu);
+#endif
 }
 
 int32_t GBAMemoryStall(struct ARMCore* cpu, int32_t wait) {

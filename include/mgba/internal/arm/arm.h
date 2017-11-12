@@ -12,6 +12,10 @@ CXX_GUARD_START
 
 #include <mgba/core/cpu.h>
 
+#ifdef BUILD_JIT
+#include <mgba/internal/arm/jit/jit.h>
+#endif
+
 enum {
 	ARM_SP = 13,
 	ARM_LR = 14,
@@ -159,6 +163,9 @@ struct ARMCore {
 
 	size_t numComponents;
 	struct mCPUComponent** components;
+#ifdef BUILD_JIT
+	struct ARMJit jit;
+#endif
 };
 
 void ARMInit(struct ARMCore* cpu);

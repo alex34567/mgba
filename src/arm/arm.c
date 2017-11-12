@@ -144,6 +144,9 @@ void ARMReset(struct ARMCore* cpu) {
 	cpu->halted = 0;
 
 	cpu->irqh.reset(cpu);
+#ifdef BUILD_JIT
+	ARMJitReset(cpu);
+#endif
 }
 
 void ARMRaiseIRQ(struct ARMCore* cpu) {
@@ -294,6 +297,11 @@ void ARMRun(struct ARMCore* cpu) {
 }
 
 void ARMRunLoop(struct ARMCore* cpu) {
+#ifdef BUILD_JIT
+	if(cpu->jit.useJit) {
+		ARMJitEnter(cpu);
+	}
+#endif
 	if (cpu->executionMode == MODE_THUMB) {
 		while (cpu->cycles < cpu->nextEvent) {
 			ThumbStep(cpu);

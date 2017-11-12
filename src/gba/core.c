@@ -241,6 +241,15 @@ static void _GBACoreLoadConfig(struct mCore* core, const struct mCoreConfig* con
 		}
 	}
 
+#ifdef BUILD_JIT
+	const char* cpuMode = mCoreConfigGetValue(config, "cpuMode");
+	if (cpuMode && (strcasecmp(cpuMode, "dynarec") == 0)) {
+	    gba->cpu->jit.wantJit = true;
+	} else {
+	    gba->cpu->jit.wantJit = false;
+	}
+#endif
+
 	mCoreConfigCopyValue(&core->config, config, "gba.bios");
 
 #ifndef DISABLE_THREADING
