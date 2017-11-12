@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>588</width>
-    <height>488</height>
+    <height>509</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -82,7 +82,7 @@
    <item row="1" column="1">
     <widget class="QStackedWidget" name="stackedWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>2</number>
      </property>
      <widget class="QWidget" name="av">
       <layout class="QFormLayout" name="formLayout">
@@ -582,6 +582,23 @@
          </item>
         </layout>
        </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_31">
+         <property name="text">
+          <string>Autofire interval:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QSpinBox" name="autofireThreshold">
+         <property name="minimum">
+          <number>1</number>
+         </property>
+         <property name="maximum">
+          <number>60</number>
+         </property>
+        </widget>
+       </item>
        <item row="2" column="0" colspan="2">
         <widget class="Line" name="line">
          <property name="orientation">
@@ -621,6 +638,16 @@
          </item>
         </layout>
        </item>
+       <item row="5" column="1">
+        <widget class="QCheckBox" name="rewindSave">
+         <property name="text">
+          <string>Rewind affects save data</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
        <item row="6" column="0" colspan="2">
         <widget class="Line" name="line_3">
          <property name="orientation">
@@ -652,6 +679,13 @@
            <string>Detect and remove</string>
           </property>
          </item>
+        </widget>
+       </item>
+       <item row="8" column="1">
+        <widget class="QCheckBox" name="preload">
+         <property name="text">
+          <string>Preload entire ROM into memory</string>
+         </property>
         </widget>
        </item>
        <item row="9" column="0" colspan="2">
@@ -698,6 +732,13 @@
          </property>
         </widget>
        </item>
+       <item row="13" column="0" colspan="2">
+        <widget class="Line" name="line_9">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
        <item row="14" column="0">
         <widget class="QLabel" name="label_25">
          <property name="text">
@@ -729,45 +770,27 @@
          </property>
         </widget>
        </item>
-       <item row="13" column="0" colspan="2">
-        <widget class="Line" name="line_9">
+       <item row="17" column="0" colspan="2">
+        <widget class="Line" name="line_13">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
         </widget>
        </item>
-       <item row="5" column="1">
-        <widget class="QCheckBox" name="rewindSave">
+       <item row="18" column="0">
+        <widget class="QLabel" name="label_34">
          <property name="text">
-          <string>Rewind affects save data</string>
-         </property>
-         <property name="checked">
-          <bool>true</bool>
+          <string>Cpu Mode</string>
          </property>
         </widget>
        </item>
-       <item row="8" column="1">
-        <widget class="QCheckBox" name="preload">
-         <property name="text">
-          <string>Preload entire ROM into memory</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="label_31">
-         <property name="text">
-          <string>Autofire interval:</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="1">
-        <widget class="QSpinBox" name="autofireThreshold">
-         <property name="minimum">
-          <number>1</number>
-         </property>
-         <property name="maximum">
-          <number>60</number>
-         </property>
+       <item row="18" column="1">
+        <widget class="QComboBox" name="cpuMode">
+         <item>
+          <property name="text">
+           <string>Interpreter</string>
+          </property>
+         </item>
         </widget>
        </item>
       </layout>

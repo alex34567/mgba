@@ -41,6 +41,10 @@ SettingsView::SettingsView(ConfigController* controller, InputController* inputC
 	}
 #endif
 
+#ifdef BUILD_JIT
+	m_ui.cpuMode->addItem(tr("Dynamic Recompiler"));
+#endif
+
 	reloadConfig();
 
 	if (m_ui.savegamePath->text().isEmpty()) {
@@ -434,6 +438,16 @@ void SettingsView::updateConfig() {
 
 	}
 #endif
+#ifdef BUILD_JIT
+	switch (m_ui.cpuMode->currentIndex()) {
+	case 0:
+		saveSetting("cpuMode", "interpret");
+		break;
+	case 1:
+		saveSetting("cpuMode", "dynarec");
+		break;
+	}
+#endif
 
 	m_controller->write();
 
@@ -537,6 +551,14 @@ void SettingsView::reloadConfig() {
 		GBModel model = GBNameToModel(modelCGB.toUtf8().constData());
 		int index = s_gbModelList.indexOf(model);
 		m_ui.cgbModel->setCurrentIndex(index >= 0 ? index : 0);
+	}
+#endif
+#ifdef BUILD_JIT
+	QString cpuMode = loadSetting("cpuMode");
+	if (cpuMode == "interpret") {
+		m_ui.cpuMode->setCurrentIndex(0);
+	} else if (cpuMode == "dynarec") {
+		m_ui.cpuMode->setCurrentIndex(1);
 	}
 #endif
 }
