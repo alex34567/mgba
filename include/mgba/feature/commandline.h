@@ -29,6 +29,7 @@ struct mArguments {
 	bool debugAtStart;
 	bool showHelp;
 	bool showVersion;
+	bool useJit;
 };
 
 struct mCoreConfig;

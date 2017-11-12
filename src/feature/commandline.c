@@ -37,6 +37,9 @@ static const struct option _options[] = {
 #ifdef USE_GDB_STUB
 	{ "gdb",       no_argument, 0, 'g' },
 #endif
+#ifdef BUILD_JIT
+	{ "jit",       no_argument, 0, 'j' },
+#endif
 	{ "help",      no_argument, 0, 'h' },
 	{ "log-level", required_argument, 0, 'l' },
 	{ "movie",     required_argument, 0, 'v' },
@@ -74,6 +77,9 @@ bool parseArguments(struct mArguments* args, int argc, char* const* argv, struct
 #endif
 #ifdef USE_GDB_STUB
 		"g"
+#endif
+#ifdef BUILD_JIT
+		"j"
 #endif
 	;
 	memset(args, 0, sizeof(*args));
@@ -118,6 +124,11 @@ bool parseArguments(struct mArguments* args, int argc, char* const* argv, struct
 				return false;
 			}
 			args->debuggerType = DEBUGGER_GDB;
+			break;
+#endif
+#ifdef BUILD_JIT
+		case 'j':
+			args->useJit = true;
 			break;
 #endif
 		case 'h':
@@ -165,6 +176,9 @@ void applyArguments(const struct mArguments* args, struct mSubParser* subparser,
 	}
 	if (args->bios) {
 		mCoreConfigSetOverrideValue(config, "bios", args->bios);
+	}
+	if (args->useJit) {
+		mCoreConfigSetOverrideValue(config, "cpuMode", "dynarec");
 	}
 	HashTableEnumerate(&args->configOverrides, _tableApply, config);
 	if (subparser) {
@@ -242,6 +256,9 @@ void usage(const char* arg0, const char* extraOptions) {
 #endif
 #ifdef USE_GDB_STUB
 	puts("  -g, --gdb                  Start GDB session (default port 2345)");
+#endif
+#ifdef BUILD_JIT
+	puts("  -j, --jit                  Dynamic Recompiler");
 #endif
 	puts("  -l, --log-level N          Log level mask");
 	puts("  -v, --movie FILE           Play back a movie of recorded input");
