@@ -11,6 +11,7 @@
 CXX_GUARD_START
 
 void* anonymousMemoryMap(size_t size);
+void* executableMemoryMap(size_t size);
 void mappedMemoryFree(void* memory, size_t size);
 
 CXX_GUARD_END
