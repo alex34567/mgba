@@ -221,6 +221,10 @@ void GBADMAService(struct GBA* gba, int number, struct GBADMA* info) {
 	uint32_t sourceRegion = source >> BASE_OFFSET;
 	uint32_t destRegion = dest >> BASE_OFFSET;
 	int32_t cycles = 2;
+	
+#ifdef BUILD_JIT
+	ARMJitInvalidateMemory(cpu, dest, wordsRemaining * width);
+#endif
 
 	gba->cpuBlocked = true;
 	if (info->count == info->nextCount) {
