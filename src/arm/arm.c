@@ -76,6 +76,10 @@ void ARMInit(struct ARMCore* cpu) {
 			cpu->components[i]->init(cpu, cpu->components[i]);
 		}
 	}
+#ifdef BUILD_JIT
+	cpu->jit.useJit = false;
+	cpu->jit.inJit = false;
+#endif
 }
 
 void ARMDeinit(struct ARMCore* cpu) {
@@ -88,6 +92,9 @@ void ARMDeinit(struct ARMCore* cpu) {
 			cpu->components[i]->deinit(cpu->components[i]);
 		}
 	}
+#ifdef BUILD_JIT
+	ARMJitDeinit(cpu);
+#endif
 }
 
 void ARMSetComponents(struct ARMCore* cpu, struct mCPUComponent* master, int extra, struct mCPUComponent** extras) {
