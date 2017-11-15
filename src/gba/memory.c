@@ -1508,7 +1508,7 @@ uint32_t GBAStoreMultiple(struct ARMCore* cpu, uint32_t address, int mask, enum 
 
 #ifdef BUILD_JIT
 	if(cpu->jit.useJit) {
-		ARMJitInvalidateMemory(cpu, old_address, address - old_address - 4);
+		ARMJitInvalidateMemory(cpu, old_address, address - old_address);
 	}
 #endif
 
