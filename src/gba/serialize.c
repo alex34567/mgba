@@ -174,6 +174,10 @@ bool GBADeserialize(struct GBA* gba, const struct GBASerializedState* state) {
 			LOAD_32(gba->cpu->prefetch[1], (gba->cpu->gprs[ARM_PC]) & gba->cpu->memory.activeMask, gba->cpu->memory.activeRegion);
 		}
 	}
+#ifdef BUILD_JIT
+	ARMJitReset(gba->cpu);
+#endif
+	
 	GBASerializedMiscFlags miscFlags = 0;
 	LOAD_32(miscFlags, 0, &state->miscFlags);
 	gba->cpu->halted = GBASerializedMiscFlagsGetHalted(miscFlags);

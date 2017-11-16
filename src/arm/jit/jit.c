@@ -77,7 +77,7 @@ static inline void _ARMJitCleanOldBlocks(struct ARMCore* cpu) {
 				}
 			}
 			y--;
-			if (y < 127) {
+			if (y < ARM_JIT_BLOCKS_TO_CLEAN - 1) {
 				// Shift list forward to maintain least to greatest order
 				memmove(&callAmounts[y + 1], &callAmounts[y], sizeof (uint16_t) * (ARM_JIT_BLOCKS_TO_CLEAN - 1 - y));
 				memmove(&leastCalledBlocks[y + 1], &leastCalledBlocks[y], sizeof (uint16_t) * (ARM_JIT_BLOCKS_TO_CLEAN - 1 - y));
