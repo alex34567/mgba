@@ -11,7 +11,7 @@
 
 // Only allow jit for code in bios, iram, wram, and cart
 
-int ARMJitIsJitableRegion(uint32_t address) {
+bool ARMJitIsJitableRegion(uint32_t address) {
 	switch (address >> BASE_OFFSET) {
 		case REGION_BIOS:
 		case REGION_WORKING_RAM:
@@ -22,9 +22,19 @@ int ARMJitIsJitableRegion(uint32_t address) {
 		case REGION_CART1_EX:
 		case REGION_CART2:
 		case REGION_CART2_EX:
-			return 1;
+			return true;
 		default:
-			return 0;
+			return false;
+	}
+}
+
+static inline bool _ARMJitIsModifyableandJitableRegion(uint32_t address) {
+	switch (address >> BASE_OFFSET) {
+		case REGION_WORKING_RAM:
+		case REGION_WORKING_IRAM:
+			return true;
+		default:
+			return false;
 	}
 }
 
@@ -47,7 +57,29 @@ void ARMJitEnter(struct ARMCore* cpu) {
 	return;
 }
 
-void ARMJitFreeBlock(struct ARMCore* cpu, uint16_t block) {
+static inline void _ARMJitSetGuestAddressBit(uint32_t mask, uint32_t address, uint8_t* bit_vec) {
+	address &= mask;
+	int bit = address / ARM_JIT_BLOCK_BYTE_SIZE;
+	int byte = bit / 8;
+	bit %= 8;
+	bit_vec[byte] |= (1 << bit);
+}
+
+void ARMJitSetGuestAddressUsed(struct ARMCore* cpu, uint32_t address) {
+	switch (address >> BASE_OFFSET) {
+	case REGION_WORKING_RAM:
+		_ARMJitSetGuestAddressBit(0x3FFFF, address, cpu->jit.cachedWramAdresses);
+		return;
+	case REGION_WORKING_IRAM:
+		_ARMJitSetGuestAddressBit(0x3FFFF, address, cpu->jit.cachedIramAdresses);
+		return;
+	default:
+		return;
+	}
+	return;
+}
+
+static inline void _ARMJitFreeSingleBlock(struct ARMCore* cpu, uint16_t block) {
 	cpu->jit.symbolTable[block].nextFree = cpu->jit.freeBlock;
 	cpu->jit.freeBlock = block;
 	cpu->jit.symbolTable[block].guestLocation = 0xFFFFFFFF;
@@ -59,9 +91,35 @@ void ARMJitFreeBlock(struct ARMCore* cpu, uint16_t block) {
 	}
 }
 
+static inline void _ARMJitEndFreeBlocks(struct ARMCore* cpu) {
+	for (int i = 0; i < JIT_SIZE_WORKING_IRAM / ARM_JIT_BLOCK_BYTE_SIZE / 8; i++) {
+		cpu->jit.cachedIramAdresses[i] = 0;
+	}
+	for (int i = 0; i < JIT_SIZE_WORKING_RAM / ARM_JIT_BLOCK_BYTE_SIZE / 8; i++) {
+		cpu->jit.cachedWramAdresses[i] = 0;
+	}
+	for (int x = 0; x < ARM_JIT_BLOCK_AMOUNT; x++) {
+		ARMJitSetGuestAddressUsed(cpu, cpu->jit.symbolTable[x].guestLocation);
+	}
+}
+
+void ARMJitFreeBlock(struct ARMCore* cpu, uint16_t block) {
+	_ARMJitFreeSingleBlock(cpu, block);
+	_ARMJitEndFreeBlocks(cpu);
+}
+
+void ARMJitFreeBlocks(struct ARMCore* cpu, const uint16_t* block_list) {
+	while(*block_list < ARM_JIT_BLOCK_AMOUNT) {
+		_ARMJitFreeSingleBlock(cpu, *block_list);
+		block_list++;
+	}
+	_ARMJitEndFreeBlocks(cpu);
+}
+
 static inline void _ARMJitCleanOldBlocks(struct ARMCore* cpu) {
 #define ARM_JIT_BLOCKS_TO_CLEAN (ARM_JIT_BLOCK_AMOUNT / 2)
-	uint16_t leastCalledBlocks[ARM_JIT_BLOCKS_TO_CLEAN];
+	uint16_t leastCalledBlocks[ARM_JIT_BLOCKS_TO_CLEAN + 1];
+	leastCalledBlocks[ARM_JIT_BLOCKS_TO_CLEAN] = 0xFFFF;
 	// Guarantee there are always blocks to free
 	for (int x = 0; x < ARM_JIT_BLOCKS_TO_CLEAN; x++) {
 		leastCalledBlocks[x] = x;
@@ -89,7 +147,7 @@ static inline void _ARMJitCleanOldBlocks(struct ARMCore* cpu) {
 		cpu->jit.symbolTable[x].callNum = 0;
 	}
 	for (int x = 0; x < ARM_JIT_BLOCKS_TO_CLEAN; x++) {
-		ARMJitFreeBlock(cpu, leastCalledBlocks[x]);
+		ARMJitFreeBlocks(cpu, leastCalledBlocks);
 	}
 #undef ARM_JIT_BLOCKS_TO_CLEAN
 }
@@ -130,18 +188,61 @@ void ARMJitReset(struct ARMCore* cpu) {
 		return;
 	}
 	cpu->jit.freeBlock = ARM_JIT_BLOCK_AMOUNT + 1;
+	uint16_t block_list[ARM_JIT_BLOCK_AMOUNT + 1];
+	block_list[ARM_JIT_BLOCK_AMOUNT] = 0xFFFF;
 	for (int i = 0; i < ARM_JIT_BLOCK_AMOUNT; i++) {
-		ARMJitFreeBlock(cpu, i);
+		block_list[i] = i;
 	}
+	ARMJitFreeBlocks(cpu, block_list);
 	return;
+}
+
+static inline bool _ARMJitQuickInvalidCheck(uint32_t address, uint32_t mask, uint8_t* bitvec) {
+	int bit;
+	int byte;
+	address &= mask;
+	if (address == mask) {
+		return false;
+	}
+	bit = address / ARM_JIT_BLOCK_BYTE_SIZE;
+	byte = bit / 8;
+	bit %= 8;
+	if (bitvec[byte] & (1 << bit)) {
+		return false;
+	}
+	bit++;
+	if (bit >= 8) {
+		bit = 0;
+		byte++;
+	}
+	if (!(bitvec[byte] & (1 << bit))) {
+		return true;
+	}
+	return false;
 }
 
 void ARMJitInvalidateMemory(struct ARMCore* cpu, uint32_t address, uint32_t size) {
 	if (!cpu->jit.useJit) {
 		return;
 	}
-	if (!ARMJitIsJitableRegion(address)) {
+	if (!_ARMJitIsModifyableandJitableRegion(address)) {
 		return;
+	}
+	if (size < ARM_JIT_BLOCK_BYTE_SIZE) {
+		switch (address >> BASE_OFFSET) {
+		case REGION_WORKING_RAM:
+			if (_ARMJitQuickInvalidCheck(address, 0x3FFFF, cpu->jit.cachedWramAdresses)) {
+				return;
+			}
+			break;
+		case REGION_WORKING_IRAM:
+			if (_ARMJitQuickInvalidCheck(address, 0x7FFF, cpu->jit.cachedIramAdresses)) {
+				return;
+			}
+			break;
+		default:
+			break;
+		}
 	}
 	uint32_t address_begin = address;
 	uint32_t address_end = address + size;
